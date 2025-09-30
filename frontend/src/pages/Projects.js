@@ -1,289 +1,868 @@
-import React, { useEffect, useState } from 'react';
-import { Container, Typography, Button, Box, Stack } from '@mui/material';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { Container, Typography, Button, Box, IconButton, Card, CardContent, Chip } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
+import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import parse from 'html-react-parser';
-import { useTheme } from '@mui/material/styles';
-import { motion } from 'framer-motion';
-import Loader from '../components/Loader';
+import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
+import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
+import GitHubIcon from '@mui/icons-material/GitHub';
+import LaunchIcon from '@mui/icons-material/Launch';
 import Skeleton from '@mui/material/Skeleton';
 
-const API_BASE = 'http://127.0.0.1:8000/';
+const API_BASE = 'https://api.abboskhoja.site';
 
 function Projects() {
-  const [projects, setProjects] = useState([]);
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
-  const textColor = theme.palette.text.primary;
+  
+  // State
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [direction, setDirection] = useState(0);
+  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  
+  // Refs
+  const autoPlayRef = useRef(null);
+  const touchStartRef = useRef(0);
+  const touchEndRef = useRef(0);
 
+  // Fetch projects from API
   useEffect(() => {
-    axios.get(`${API_BASE}/projects/`).then(res => setProjects(res.data.results || res.data));
+    const fetchProjects = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get(`${API_BASE}/projects/`);
+        const data = response.data.results || response.data;
+        setProjects(data);
+      } catch (error) {
+        console.error('Error fetching projects:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProjects();
   }, []);
 
-  const container = {
-    hidden: { opacity: 1 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.15
+  // Auto-play functionality
+  useEffect(() => {
+    if (!isAutoPlaying || projects.length <= 1) return;
+
+    autoPlayRef.current = setInterval(() => {
+      handleNext();
+    }, 5000);
+
+    return () => {
+      if (autoPlayRef.current) {
+        clearInterval(autoPlayRef.current);
+      }
+    };
+  }, [isAutoPlaying, currentIndex, projects.length]);
+
+  // Navigation functions
+  const handleNext = useCallback(() => {
+    setDirection(1);
+    setCurrentIndex((prev) => (prev + 1) % projects.length);
+  }, [projects.length]);
+
+  const handlePrev = useCallback(() => {
+    setDirection(-1);
+    setCurrentIndex((prev) => (prev - 1 + projects.length) % projects.length);
+  }, [projects.length]);
+
+  const goToSlide = useCallback((index) => {
+    setDirection(index > currentIndex ? 1 : -1);
+    setCurrentIndex(index);
+  }, [currentIndex]);
+
+  // Touch handlers for mobile swipe
+  const handleTouchStart = (e) => {
+    touchStartRef.current = e.touches[0].clientX;
+  };
+
+  const handleTouchMove = (e) => {
+    touchEndRef.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    const swipeThreshold = 50;
+    const diff = touchStartRef.current - touchEndRef.current;
+
+    if (Math.abs(diff) > swipeThreshold) {
+      if (diff > 0) {
+        handleNext();
+      } else {
+        handlePrev();
       }
     }
   };
-  const item = {
-    hidden: { opacity: 0, y: 40 },
-    show: { opacity: 1, y: 0 }
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'ArrowLeft') handlePrev();
+      if (e.key === 'ArrowRight') handleNext();
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleNext, handlePrev]);
+
+  // Animation variants - Faster animations
+  const slideVariants = {
+    enter: (direction) => ({
+      x: direction > 0 ? 600 : -600,
+      opacity: 0,
+      scale: 0.9,
+    }),
+    center: {
+      x: 0,
+      opacity: 1,
+      scale: 1,
+      transition: {
+        x: { type: 'spring', stiffness: 400, damping: 35 },
+        opacity: { duration: 0.2 },
+        scale: { duration: 0.2 },
+      },
+    },
+    exit: (direction) => ({
+      x: direction < 0 ? 600 : -600,
+      opacity: 0,
+      scale: 0.9,
+      transition: {
+        x: { type: 'spring', stiffness: 400, damping: 35 },
+        opacity: { duration: 0.2 },
+        scale: { duration: 0.2 },
+      },
+    }),
   };
 
-  if (!projects || projects.length === 0) return (
-    <Box sx={{ minHeight: '100vh', background: theme.palette.background.default, py: 8 }}>
-      <Container maxWidth="lg">
-        <Skeleton variant="text" width={220} height={48} sx={{ mb: 8, fontSize: 32, borderRadius: 2 }} />
-        {[...Array(2)].map((_, i) => (
-          <Box key={i} sx={{ display: 'flex', flexDirection: { xs: 'column', md: i % 2 === 0 ? 'row' : 'row-reverse' }, alignItems: 'center', gap: { xs: 4, md: 8 }, mb: 12 }}>
-            <Skeleton variant="rectangular" width={340} height={220} sx={{ borderRadius: 24, mb: { xs: 2, md: 0 } }} />
-            <Box sx={{ flex: 1, px: { xs: 0, md: 2 } }}>
-              <Skeleton variant="text" width={180} height={36} sx={{ mb: 2, fontSize: 24, borderRadius: 2 }} />
-              <Skeleton variant="text" width="80%" height={24} sx={{ mb: 2, fontSize: 17, borderRadius: 2 }} />
-              <Skeleton variant="rectangular" width={120} height={32} sx={{ borderRadius: 99, mb: 1 }} />
-              <Skeleton variant="rectangular" width={120} height={32} sx={{ borderRadius: 99, mb: 1 }} />
-            </Box>
+  // Loading skeleton
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          minHeight: '100vh',
+          background: theme.palette.background.default,
+          py: { xs: 6, md: 10 },
+          px: { xs: 2, sm: 3 },
+        }}
+      >
+        <Container maxWidth="lg">
+          <Skeleton
+            variant="text"
+            width={250}
+            height={60}
+            sx={{ mx: 'auto', mb: 6, borderRadius: 2 }}
+          />
+          <Skeleton
+            variant="rectangular"
+            height={500}
+            sx={{ borderRadius: 4, mb: 3 }}
+          />
+          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
+            {[...Array(5)].map((_, i) => (
+              <Skeleton key={i} variant="circular" width={12} height={12} />
+            ))}
           </Box>
-        ))}
-      </Container>
-    </Box>
-  );
+        </Container>
+      </Box>
+    );
+  }
+
+  // No projects
+  if (!projects || projects.length === 0) {
+    return (
+      <Box
+        sx={{
+          minHeight: '100vh',
+          background: theme.palette.background.default,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Typography variant="h5" color="text.secondary">
+          No projects available
+        </Typography>
+      </Box>
+    );
+  }
+
+  const currentProject = projects[currentIndex];
+
   return (
-    <Box sx={{ 
-      minHeight: '100vh', 
-      background: theme.palette.background.default, 
-      py: { xs: 4, sm: 6, md: 8 },
-      px: { xs: 2, sm: 3 },
-    }}>
-      <Container maxWidth="lg" sx={{ px: { xs: 1, sm: 2 } }}>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        background: theme.palette.background.default,
+        py: { xs: 6, md: 10 },
+        px: { xs: 2, sm: 3 },
+      }}
+    >
+      <Container maxWidth="lg">
+        {/* Title */}
         <Typography
-          component={motion.h3}
-          initial={{ opacity: 0, y: 30 }}
+          component={motion.h2}
+          initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, ease: 'easeOut' }}
-          variant="h3"
-          fontWeight={400}
-          sx={{ 
-            mb: { xs: 4, sm: 6, md: 8 }, 
-            letterSpacing: '-1px', 
-            color: textColor, 
-            textAlign: 'center', 
-            fontFamily: 'Poppins, Montserrat, Inter, sans-serif',
-            fontSize: { xs: '1.75rem', sm: '2.5rem' },
+          transition={{ duration: 0.6 }}
+          variant="h2"
+          sx={{
+            textAlign: 'center',
+            mb: { xs: 6, md: 8 },
+            fontWeight: 700,
+            fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' },
+            background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
           }}
         >
-          PROJECTS
+          My Projects
         </Typography>
-        <Box component={motion.div} variants={container} initial="hidden" animate="show">
-          {projects.map((project, i) => (
-            <Box component={motion.div} variants={item} key={project.id}>
+
+        {/* Carousel Container */}
+        <Box
+          sx={{
+            position: 'relative',
+            width: '100%',
+            overflow: 'visible',
+            px: { xs: 0, sm: 4, md: 8 },
+          }}
+          onMouseEnter={() => setIsAutoPlaying(false)}
+          onMouseLeave={() => setIsAutoPlaying(true)}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          {/* Main Carousel */}
+          <Box
+            sx={{
+              position: 'relative',
+              minHeight: { xs: 450, sm: 480, md: 500 },
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: { xs: 2, sm: 3, md: 4 },
+            }}
+          >
+            {/* Previous Project (Left) */}
+            {projects.length > 1 && (
               <Box
+                onClick={handlePrev}
                 sx={{
-                  display: 'flex',
-                  flexDirection: { xs: 'column', lg: i % 2 === 0 ? 'row' : 'row-reverse' },
-                  alignItems: 'center',
-                  gap: { xs: 3, sm: 4, lg: 6 },
-                  mb: { xs: 6, sm: 8, lg: 10 },
-                  background: 'none',
-                  px: { xs: 1, sm: 2 },
+                  display: { xs: 'none', md: 'block' },
+                  flex: '0 0 20%',
+                  cursor: 'pointer',
+                  opacity: 0.4,
+                  filter: 'blur(2px)',
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    opacity: 0.6,
+                    filter: 'blur(1px)',
+                    transform: 'scale(1.02)',
+                  },
                 }}
               >
-                {/* Image/Illustration */}
-                <Box sx={{ 
-                  flex: 1, 
-                  display: 'flex', 
-                  justifyContent: 'center', 
-                  alignItems: 'center', 
-                  minHeight: { xs: 180, sm: 200, lg: 220 },
-                  order: { xs: 1, lg: 0 },
-                }}>
-                  {project.image || (project.cover_images && project.cover_images.length > 0) ? (
-                    <Box sx={{
-                      border: `3px solid ${theme.palette.mode === 'dark' ? '#333' : '#e0e0e0'}`,
-                      borderRadius: { xs: 12, sm: 16, lg: 18 },
-                      p: '8px',
-                      background: theme.palette.background.paper,
-                      boxShadow: isDark 
-                        ? '0 8px 32px 0 rgba(31,38,135,0.15), 0 4px 16px 0 rgba(0,0,0,0.1)' 
-                        : '0 8px 32px 0 rgba(80,120,200,0.12), 0 4px 16px 0 rgba(0,0,0,0.08)',
-                      transition: 'all 0.3s ease',
-                      width: { xs: 280, sm: 320, lg: 360 },
-                      height: { xs: 170, sm: 190, lg: 210 },
-                      '&:hover': {
-                        transform: 'translateY(-4px)',
-                        boxShadow: isDark 
-                          ? '0 12px 40px 0 rgba(31,38,135,0.25), 0 8px 24px 0 rgba(0,0,0,0.15)' 
-                          : '0 12px 40px 0 rgba(80,120,200,0.2), 0 8px 24px 0 rgba(0,0,0,0.12)',
-                      },
-                    }}>
+                <Card
+                  elevation={0}
+                  sx={{
+                    background: isDark
+                      ? 'rgba(30, 30, 40, 0.5)'
+                      : 'rgba(255, 255, 255, 0.6)',
+                    backdropFilter: 'blur(10px)',
+                    borderRadius: 3,
+                    overflow: 'hidden',
+                    border: `1px solid ${
+                      isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'
+                    }`,
+                    display: 'flex',
+                    flexDirection: 'column',
+                  }}
+                >
+                  <Box sx={{ position: 'relative', height: 300, overflow: 'hidden' }}>
+                    {projects[
+                      (currentIndex - 1 + projects.length) % projects.length
+                    ]?.image ||
+                    (projects[
+                      (currentIndex - 1 + projects.length) % projects.length
+                    ]?.cover_images &&
+                      projects[
+                        (currentIndex - 1 + projects.length) % projects.length
+                      ]?.cover_images.length > 0) ? (
                       <Box
                         component="img"
-                        src={project.image || project.cover_images?.[0]?.image}
-                        alt={project.title}
-                        sx={{ 
+                        src={
+                          projects[
+                            (currentIndex - 1 + projects.length) %
+                              projects.length
+                          ]?.image ||
+                          projects[
+                            (currentIndex - 1 + projects.length) %
+                              projects.length
+                          ]?.cover_images?.[0]?.image
+                        }
+                        alt={
+                          projects[
+                            (currentIndex - 1 + projects.length) %
+                              projects.length
+                          ]?.title
+                        }
+                        sx={{
                           width: '100%',
                           height: '100%',
                           objectFit: 'cover',
-                          borderRadius: { xs: 10, sm: 14, lg: 16 }, 
-                          display: 'block',
                         }}
                       />
-                    </Box>
-                  ) : (
-                    <Box sx={{
-                      width: { xs: 220, sm: 260, lg: 280 }, 
-                      height: { xs: 150, sm: 170, lg: 190 }, 
-                      border: `3px solid ${theme.palette.mode === 'dark' ? '#333' : '#e0e0e0'}`,
-                      borderRadius: { xs: 12, sm: 16, lg: 18 },
-                      padding: '8px',
-                      background: `linear-gradient(135deg, ${theme.palette.background.paper} 60%, ${theme.palette.primary.main} 100%)`,
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center', 
-                      color: textColor, 
-                      fontWeight: 700, 
-                      fontSize: { xs: 24, sm: 28, lg: 32 },
-                      boxShadow: isDark 
-                        ? '0 8px 32px 0 rgba(31,38,135,0.15), 0 4px 16px 0 rgba(0,0,0,0.1)' 
-                        : '0 8px 32px 0 rgba(80,120,200,0.12), 0 4px 16px 0 rgba(0,0,0,0.08)',
-                      transition: 'all 0.3s ease',
-                      '&:hover': {
-                        transform: 'translateY(-4px)',
-                        boxShadow: isDark 
-                          ? '0 12px 40px 0 rgba(31,38,135,0.25), 0 8px 24px 0 rgba(0,0,0,0.15)' 
-                          : '0 12px 40px 0 rgba(80,120,200,0.2), 0 8px 24px 0 rgba(0,0,0,0.12)',
-                      },
-                    }}>
-                      Project
-                    </Box>
-                  )}
-                </Box>
-                {/* Text Content */}
-                <Box sx={{ 
-                  flex: 1, 
-                  px: { xs: 0, lg: 2 },
-                  order: { xs: 0, lg: 1 },
-                  textAlign: { xs: 'center', lg: 'left' },
-                }}>
-                  <Typography 
-                    variant="h4" 
-                    fontWeight={900} 
-                    sx={{ 
-                      mb: 2, 
-                      color: textColor, 
-                      background: 'none',
-                      fontSize: { xs: '1.5rem', sm: '2rem', lg: '2.125rem' },
-                    }}
-                  >
-                    {project.title}
-                  </Typography>
-                  {project.description && (
-                    <Box sx={{ 
-                      color: textColor, 
-                      fontSize: { xs: 15, sm: 16, lg: 17 }, 
-                      mb: 2,
-                      lineHeight: 1.6,
-                    }}>
-                      {parse(project.description)}
-                    </Box>
-                  )}
-                  {project.tag && project.tag.length > 0 && (
-                    <Box sx={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      gap: 1, 
-                      mt: 1, 
-                      flexWrap: 'wrap',
-                      justifyContent: { xs: 'center', lg: 'flex-start' },
-                    }}>
-                      <span style={{ 
-                        marginRight: 6, 
-                        fontSize: { xs: 14, sm: 16 }, 
-                        color: textColor 
-                      }}>🏷️</span>
-                      {project.tag.map((tag, j) => (
-                        <Box key={j} sx={{ 
-                          px: { xs: 1, sm: 1.5 }, 
-                          py: 0.5, 
-                          borderRadius: 99, 
-                          background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`, 
-                          color: '#fff', 
-                          fontWeight: 500, 
-                          fontSize: { xs: 12, sm: 14 }, 
-                          mx: 0.5, 
-                          mb: 0.5 
-                        }}>
-                          {tag}
-                        </Box>
-                      ))}
-                    </Box>
-                  )}
-                  <Box sx={{ 
-                    display: 'flex', 
-                    gap: { xs: 1.5, sm: 2 }, 
-                    mt: 2,
-                    flexDirection: { xs: 'column', sm: 'row' },
-                    alignItems: { xs: 'center', lg: 'flex-start' },
-                  }}>
-                    {project.git_hub && (
-                      <Button 
-                        href={project.git_hub} 
-                        target="_blank" 
-                        sx={{ 
-                          color: '#fff', 
-                          background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`, 
-                          textTransform: 'none', 
-                          fontWeight: 700, 
-                          fontSize: { xs: 14, sm: 15 }, 
-                          borderRadius: 99, 
-                          px: { xs: 2.5, sm: 3 }, 
-                          py: { xs: 1.5, sm: 1 }, 
-                          width: { xs: '100%', sm: 'auto' },
-                          maxWidth: { xs: '200px', sm: 'none' },
-                          '&:hover': { 
-                            background: `linear-gradient(90deg, ${theme.palette.secondary.main}, ${theme.palette.primary.main})`,
-                            transform: 'translateY(-2px)',
-                          },
-                          transition: 'all 0.2s ease',
+                    ) : (
+                      <Box
+                        sx={{
+                          width: '100%',
+                          height: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '2rem',
+                          fontWeight: 700,
+                          color: theme.palette.primary.main,
                         }}
                       >
-                        GitHub
-                      </Button>
-                    )}
-                    {project.project_url && (
-                      <Button 
-                        href={project.project_url} 
-                        target="_blank" 
-                        sx={{ 
-                          color: '#fff', 
-                          background: `linear-gradient(90deg, ${theme.palette.secondary.main}, ${theme.palette.primary.main})`, 
-                          textTransform: 'none', 
-                          fontWeight: 700, 
-                          fontSize: { xs: 14, sm: 15 }, 
-                          borderRadius: 99, 
-                          px: { xs: 2.5, sm: 3 }, 
-                          py: { xs: 1.5, sm: 1 },
-                          width: { xs: '100%', sm: 'auto' },
-                          maxWidth: { xs: '200px', sm: 'none' },
-                          '&:hover': { 
-                            background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
-                            transform: 'translateY(-2px)',
-                          },
-                          transition: 'all 0.2s ease',
-                        }}
-                      >
-                        Live Demo
-                      </Button>
+                        {projects[
+                          (currentIndex - 1 + projects.length) % projects.length
+                        ]?.title?.charAt(0) || 'P'}
+                      </Box>
                     )}
                   </Box>
-                </Box>
+                  <Box sx={{ flex: 1, p: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Typography 
+                      variant="caption" 
+                      sx={{ 
+                        color: theme.palette.text.primary,
+                        fontWeight: 600,
+                        fontSize: '0.8rem',
+                        textAlign: 'center',
+                        lineHeight: 1.3,
+                      }}
+                    >
+                      {projects[(currentIndex - 1 + projects.length) % projects.length]?.title}
+                    </Typography>
+                  </Box>
+                </Card>
               </Box>
-            </Box>
-          ))}
+            )}
+
+            {/* Current Project (Center) */}
+            <AnimatePresence initial={false} custom={direction} mode="wait">
+              <motion.div
+                key={currentIndex}
+                custom={direction}
+                variants={slideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                style={{
+                  flex: '0 0 auto',
+                  width: '100%',
+                  maxWidth: projects.length > 1 ? '55%' : '80%',
+                }}
+              >
+                <Card
+                  component={motion.div}
+                  whileHover={{ 
+                    y: -8,
+                    transition: { duration: 0.3 }
+                  }}
+                  elevation={0}
+                  sx={{
+                    background: isDark
+                      ? 'rgba(25, 28, 35, 0.95)'
+                      : 'rgba(255, 255, 255, 0.98)',
+                    backdropFilter: 'blur(20px)',
+                    borderRadius: 4,
+                    overflow: 'hidden',
+                    border: `1px solid ${
+                      isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'
+                    }`,
+                    boxShadow: isDark
+                      ? '0 20px 60px rgba(0,0,0,0.4)'
+                      : '0 20px 60px rgba(0,0,0,0.12)',
+                    transition: 'all 0.3s ease',
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      minHeight: { xs: 450, sm: 480, md: 500 },
+                      position: 'relative',
+                    }}
+                  >
+                    {/* Image Section */}
+                    <Box
+                      sx={{
+                        position: 'relative',
+                        overflow: 'hidden',
+                        height: { xs: 220, sm: 260, md: 300 },
+                        background: isDark 
+                          ? `linear-gradient(135deg, ${theme.palette.primary.main}15, ${theme.palette.secondary.main}15)`
+                          : `linear-gradient(135deg, ${theme.palette.primary.main}10, ${theme.palette.secondary.main}10)`,
+                      }}
+                    >
+                      {currentProject?.image ||
+                      (currentProject?.cover_images &&
+                        currentProject?.cover_images.length > 0) ? (
+                        <Box
+                          component={motion.img}
+                          initial={{ scale: 1.3, opacity: 0, rotate: -2 }}
+                          animate={{ scale: 1, opacity: 1, rotate: 0 }}
+                          transition={{ 
+                            duration: 0.8,
+                            ease: [0.43, 0.13, 0.23, 0.96]
+                          }}
+                          whileHover={{ scale: 1.05 }}
+                          src={
+                            currentProject?.image ||
+                            currentProject?.cover_images?.[0]?.image
+                          }
+                          alt={currentProject?.title}
+                          sx={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            filter: 'brightness(1.1) contrast(1.05)',
+                            transition: 'all 0.5s ease',
+                          }}
+                        />
+                      ) : (
+                        <Box
+                          sx={{
+                            width: '100%',
+                            height: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: { xs: '3rem', md: '4rem' },
+                            fontWeight: 900,
+                            background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent',
+                            backgroundClip: 'text',
+                          }}
+                        >
+                          {currentProject?.title?.charAt(0) || 'P'}
+                        </Box>
+                      )}
+                      
+                      {/* Simple Badge */}
+                      <Box
+                        component={motion.div}
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3, duration: 0.4 }}
+                        sx={{
+                          position: 'absolute',
+                          top: 16,
+                          right: 16,
+                          zIndex: 2,
+                          background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+                          color: '#fff',
+                          px: 2,
+                          py: 0.7,
+                          borderRadius: 2,
+                          fontWeight: 700,
+                          fontSize: '0.75rem',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                          textTransform: 'uppercase',
+                          letterSpacing: 1,
+                        }}
+                      >
+                        Featured
+                      </Box>
+                    </Box>
+
+                    {/* Content Section */}
+                    <CardContent
+                      sx={{
+                        flex: 1,
+                        p: { xs: 2.5, sm: 3, md: 3.5 },
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'flex-start',
+                      }}
+                    >
+                      {/* Title */}
+                      <Typography
+                        variant="h4"
+                        component={motion.h4}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2, duration: 0.5 }}
+                        sx={{
+                          fontWeight: 800,
+                          mb: 2,
+                          fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2rem' },
+                          color: theme.palette.text.primary,
+                          letterSpacing: '-0.5px',
+                          position: 'relative',
+                          paddingBottom: 1.5,
+                          '&::after': {
+                            content: '""',
+                            position: 'absolute',
+                            bottom: 0,
+                            left: 0,
+                            width: 60,
+                            height: 4,
+                            background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+                            borderRadius: 2,
+                          },
+                        }}
+                      >
+                        {currentProject?.title}
+                      </Typography>
+
+                      {/* Description */}
+                      {currentProject?.description && (
+                        <Box
+                          component={motion.div}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.3, duration: 0.5 }}
+                          sx={{
+                            mb: 2.5,
+                            color: theme.palette.text.secondary,
+                            fontSize: { xs: '0.9rem', sm: '0.95rem' },
+                            lineHeight: 1.7,
+                            '& p': { mb: 0.5 },
+                          }}
+                        >
+                          {parse(currentProject?.description)}
+                        </Box>
+                      )}
+
+                      {/* Tags */}
+                      {currentProject?.tag && currentProject?.tag.length > 0 && (
+                        <Box
+                          component={motion.div}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: 0.4, duration: 0.5 }}
+                          sx={{
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            gap: 1,
+                            mb: 3,
+                          }}
+                        >
+                          {currentProject?.tag.map((tag, index) => (
+                            <Chip
+                              key={index}
+                              label={tag}
+                              size="small"
+                              sx={{
+                                background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+                                color: '#fff',
+                                fontWeight: 600,
+                                fontSize: '0.75rem',
+                                height: 28,
+                                px: 0.5,
+                                transition: 'transform 0.2s ease',
+                                '&:hover': {
+                                  transform: 'translateY(-2px)',
+                                },
+                              }}
+                            />
+                          ))}
+                        </Box>
+                      )}
+
+                      {/* Action Buttons */}
+                      <Box
+                        component={motion.div}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.5, duration: 0.5 }}
+                        sx={{
+                          display: 'flex',
+                          gap: 2,
+                          flexWrap: 'wrap',
+                          mt: 'auto',
+                        }}
+                      >
+                        {currentProject?.git_hub && (
+                          <Button
+                            variant="contained"
+                            startIcon={<GitHubIcon />}
+                            href={currentProject?.git_hub}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            component={motion.a}
+                            whileHover={{ scale: 1.05, y: -2 }}
+                            whileTap={{ scale: 0.98 }}
+                            sx={{
+                              background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+                              color: '#fff',
+                              fontWeight: 600,
+                              px: 3,
+                              py: 1.2,
+                              borderRadius: 2,
+                              textTransform: 'none',
+                              fontSize: '0.95rem',
+                              boxShadow: '0 4px 14px rgba(0,0,0,0.15)',
+                              '&:hover': {
+                                boxShadow: '0 6px 20px rgba(0,0,0,0.25)',
+                              },
+                              transition: 'all 0.3s ease',
+                            }}
+                          >
+                            View Code
+                          </Button>
+                        )}
+                        {currentProject?.project_url && (
+                          <Button
+                            variant="outlined"
+                            startIcon={<LaunchIcon />}
+                            href={currentProject?.project_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            component={motion.a}
+                            whileHover={{ scale: 1.05, y: -2 }}
+                            whileTap={{ scale: 0.98 }}
+                            sx={{
+                              borderColor: theme.palette.primary.main,
+                              color: theme.palette.primary.main,
+                              fontWeight: 600,
+                              px: 3,
+                              py: 1.2,
+                              borderRadius: 2,
+                              textTransform: 'none',
+                              fontSize: '0.95rem',
+                              borderWidth: 2,
+                              '&:hover': {
+                                borderWidth: 2,
+                                background: `${theme.palette.primary.main}10`,
+                              },
+                              transition: 'all 0.3s ease',
+                            }}
+                          >
+                            Live Demo
+                          </Button>
+                        )}
+                      </Box>
+                    </CardContent>
+                  </Box>
+                </Card>
+              </motion.div>
+            </AnimatePresence>
+
+            {/* Next Project (Right) */}
+            {projects.length > 1 && (
+              <Box
+                onClick={handleNext}
+                sx={{
+                  display: { xs: 'none', md: 'block' },
+                  flex: '0 0 20%',
+                  cursor: 'pointer',
+                  opacity: 0.4,
+                  filter: 'blur(2px)',
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    opacity: 0.6,
+                    filter: 'blur(1px)',
+                    transform: 'scale(1.02)',
+                  },
+                }}
+              >
+                <Card
+                  elevation={0}
+                  sx={{
+                    background: isDark
+                      ? 'rgba(30, 30, 40, 0.5)'
+                      : 'rgba(255, 255, 255, 0.6)',
+                    backdropFilter: 'blur(10px)',
+                    borderRadius: 3,
+                    overflow: 'hidden',
+                    border: `1px solid ${
+                      isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'
+                    }`,
+                    display: 'flex',
+                    flexDirection: 'column',
+                  }}
+                >
+                  <Box sx={{ position: 'relative', height: 300, overflow: 'hidden' }}>
+                    {projects[(currentIndex + 1) % projects.length]?.image ||
+                    (projects[(currentIndex + 1) % projects.length]
+                      ?.cover_images &&
+                      projects[(currentIndex + 1) % projects.length]
+                        ?.cover_images.length > 0) ? (
+                      <Box
+                        component="img"
+                        src={
+                          projects[(currentIndex + 1) % projects.length]
+                            ?.image ||
+                          projects[(currentIndex + 1) % projects.length]
+                            ?.cover_images?.[0]?.image
+                        }
+                        alt={
+                          projects[(currentIndex + 1) % projects.length]?.title
+                        }
+                        sx={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                        }}
+                      />
+                    ) : (
+                      <Box
+                        sx={{
+                          width: '100%',
+                          height: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '2rem',
+                          fontWeight: 700,
+                          color: theme.palette.primary.main,
+                        }}
+                      >
+                        {projects[(currentIndex + 1) % projects.length]?.title?.charAt(0) || 'P'}
+                      </Box>
+                    )}
+                  </Box>
+                  <Box sx={{ flex: 1, p: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Typography 
+                      variant="caption" 
+                      sx={{ 
+                        color: theme.palette.text.primary,
+                        fontWeight: 600,
+                        fontSize: '0.8rem',
+                        textAlign: 'center',
+                        lineHeight: 1.3,
+                      }}
+                    >
+                      {projects[(currentIndex + 1) % projects.length]?.title}
+                    </Typography>
+                  </Box>
+                </Card>
+              </Box>
+            )}
+          </Box>
+
+          {/* Navigation Arrows */}
+          {projects.length > 1 && (
+            <>
+              <IconButton
+                onClick={handlePrev}
+                sx={{
+                  position: 'absolute',
+                  left: { xs: 8, md: 16 },
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  zIndex: 2,
+                  background: isDark
+                    ? 'rgba(255,255,255,0.1)'
+                    : 'rgba(0,0,0,0.05)',
+                  backdropFilter: 'blur(10px)',
+                  '&:hover': {
+                    background: isDark
+                      ? 'rgba(255,255,255,0.2)'
+                      : 'rgba(0,0,0,0.1)',
+                    transform: 'translateY(-50%) scale(1.1)',
+                  },
+                  transition: 'all 0.3s ease',
+                  width: { xs: 40, md: 50 },
+                  height: { xs: 40, md: 50 },
+                }}
+              >
+                <ArrowBackIosNewIcon />
+              </IconButton>
+              <IconButton
+                onClick={handleNext}
+                sx={{
+                  position: 'absolute',
+                  right: { xs: 8, md: 16 },
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  zIndex: 2,
+                  background: isDark
+                    ? 'rgba(255,255,255,0.1)'
+                    : 'rgba(0,0,0,0.05)',
+                  backdropFilter: 'blur(10px)',
+                  '&:hover': {
+                    background: isDark
+                      ? 'rgba(255,255,255,0.2)'
+                      : 'rgba(0,0,0,0.1)',
+                    transform: 'translateY(-50%) scale(1.1)',
+                  },
+                  transition: 'all 0.3s ease',
+                  width: { xs: 40, md: 50 },
+                  height: { xs: 40, md: 50 },
+                }}
+              >
+                <ArrowForwardIosIcon />
+              </IconButton>
+            </>
+          )}
         </Box>
+
+        {/* Dots Indicator */}
+        {projects.length > 1 && (
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              gap: 1.5,
+              mt: 4,
+            }}
+          >
+            {projects.map((_, index) => (
+              <Box
+                key={index}
+                component={motion.button}
+                whileHover={{ scale: 1.2 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => goToSlide(index)}
+                sx={{
+                  width: currentIndex === index ? 32 : 12,
+                  height: 12,
+                  borderRadius: 6,
+                  border: 'none',
+                  background:
+                    currentIndex === index
+                      ? `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`
+                      : isDark
+                      ? 'rgba(255,255,255,0.3)'
+                      : 'rgba(0,0,0,0.2)',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    background:
+                      currentIndex === index
+                        ? `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`
+                        : isDark
+                        ? 'rgba(255,255,255,0.5)'
+                        : 'rgba(0,0,0,0.4)',
+                  },
+                }}
+              />
+            ))}
+          </Box>
+        )}
+
+        {/* Project Counter */}
+        <Typography
+          variant="body2"
+          sx={{
+            textAlign: 'center',
+            mt: 3,
+            color: theme.palette.text.secondary,
+            fontWeight: 500,
+          }}
+        >
+          {currentIndex + 1} / {projects.length}
+        </Typography>
       </Container>
     </Box>
   );

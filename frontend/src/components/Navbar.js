@@ -98,17 +98,14 @@ function Navbar() {
                   marginLeft: idx === 0 ? 0 : 12,
                   letterSpacing: 0.5,
                   cursor: 'pointer',
-                  transition: 'all 0.2s ease',
+                  transition: 'color 0.2s ease',
                   padding: '8px 12px',
-                  borderRadius: '8px',
                 }}
                 onMouseEnter={(e) => {
                   e.target.style.color = theme.palette.primary.main;
-                  e.target.style.backgroundColor = theme.palette.mode === 'dark' ? '#333' : '#f5f5f5';
                 }}
                 onMouseLeave={(e) => {
                   e.target.style.color = location.pathname === page.path ? theme.palette.primary.main : theme.palette.text.secondary;
-                  e.target.style.backgroundColor = 'transparent';
                 }}
               >
                 {page.name}

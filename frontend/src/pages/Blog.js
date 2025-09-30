@@ -10,21 +10,27 @@ import { useNavigate } from 'react-router-dom';
 import Loader from '../components/Loader';
 import Skeleton from '@mui/material/Skeleton';
 
-const API_BASE = 'http://127.0.0.1:8000/';
+const API_BASE = 'https://api.abboskhoja.site';
 
 function Blog() {
   const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const textColor = theme.palette.text.primary;
   const navigate = useNavigate();
 
   useEffect(() => {
+    setLoading(true);
     axios.get(`${API_BASE}/blogs/`).then(res => {
       const postsData = res.data.results || res.data;
-      // Sort posts by created_at in descending order (newest first)
-      const sortedPosts = postsData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      // Filter only published posts (is_published === true or is_published field doesn't exist)
+      const publishedPosts = postsData.filter(post => post.is_published !== false);
+      const sortedPosts = publishedPosts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
       setPosts(sortedPosts);
+      setLoading(false);
+    }).catch(() => {
+      setLoading(false);
     });
   }, []);
 
@@ -62,7 +68,7 @@ function Blog() {
     show: { opacity: 1, y: 0 }
   };
 
-  if (!posts || posts.length === 0) return (
+  if (loading) return (
     <Box sx={{ minHeight: '100vh', background: theme.palette.background.default, py: 8 }}>
       <Container maxWidth="lg">
         <Skeleton variant="text" width={220} height={48} sx={{ mb: 4, fontSize: 32, borderRadius: 2 }} />
@@ -79,9 +85,9 @@ function Blog() {
   return (
     <Box sx={{ minHeight: '100vh', background: theme.palette.background.default, py: { xs: 4, md: 8 } }}>
       <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3 } }}>
-        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: { xs: 3, sm: 4, md: 6 }, alignItems: 'flex-start' }}>
-          {/* Main archive */}
-          <Box sx={{ flex: 1 }}>
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: { xs: 3, sm: 4, md: 4 }, alignItems: 'flex-start' }}>
+          {/* Main archive - Left Side */}
+          <Box sx={{ flex: 1, order: { xs: 0, md: 0 } }}>
             <Typography
               component={motion.h3}
               initial={{ opacity: 0, y: 30 }}
@@ -89,10 +95,11 @@ function Blog() {
               transition={{ duration: 0.7, ease: 'easeOut' }}
               variant="h3"
               fontWeight={400}
-              sx={{ mb: { xs: 3, md: 4 }, letterSpacing: '-1px', color: textColor, fontFamily: 'Poppins, Montserrat, Inter, sans-serif', fontSize: { xs: '1.75rem', md: '2.5rem' } }}
+              sx={{ mb: { xs: 4, md: 6 }, letterSpacing: '-1px', color: textColor, fontFamily: 'Poppins, Montserrat, Inter, sans-serif', fontSize: { xs: '1.75rem', md: '2.5rem' } }}
             >
-              BLOG
+              Blog
             </Typography>
+            <Box>
             <Box component={motion.div} variants={container} initial="hidden" animate="show">
               {Object.keys(grouped).sort((a, b) => b - a).map(year => (
                 <Box key={year} sx={{ mb: 6 }}>
@@ -112,20 +119,20 @@ function Blog() {
                               alignItems: { xs: 'flex-start', sm: 'center' },
                               justifyContent: 'space-between',
                               gap: { xs: 1.5, sm: 2 },
-                              py: { xs: 1.5, sm: 2.5 },
-                              px: { xs: 2, sm: 3 },
-                              mb: idx !== arr.length - 1 ? 2 : 0,
+                              py: { xs: 1.25, sm: 1.75 },
+                              px: { xs: 2, sm: 2.5 },
+                              mb: idx !== arr.length - 1 ? 1.5 : 0,
                               background: 'transparent',
                               boxShadow: theme.palette.mode === 'dark'
-                                ? '0 12px 24px -8px rgba(80,120,200,0.18)'
-                                : '0 12px 24px -8px rgba(24,26,32,0.13)',
+                                ? '0 8px 16px -6px rgba(80,120,200,0.15)'
+                                : '0 8px 16px -6px rgba(24,26,32,0.1)',
                               borderRadius: 2,
                               cursor: 'pointer',
                               transition: 'background 0.2s, box-shadow 0.2s',
                               '&:hover': {
                                 boxShadow: theme.palette.mode === 'dark'
-                                  ? '0 18px 36px -8px rgba(80,120,200,0.22)'
-                                  : '0 18px 36px -8px rgba(24,26,32,0.18)',
+                                  ? '0 12px 24px -6px rgba(80,120,200,0.2)'
+                                  : '0 12px 24px -6px rgba(24,26,32,0.15)',
                               },
                               '&:hover .arrow': {
                                 opacity: 1,
@@ -160,20 +167,24 @@ function Blog() {
               ))}
             </Box>
           </Box>
-          {/* Sidebar */}
+          </Box>
+          
+          {/* Sidebar - Right Side */}
           <Box sx={{ 
-            minWidth: { md: 280 }, 
-            maxWidth: { md: 340 }, 
-            width: { xs: '100%', md: 'auto' },
+            width: { xs: '100%', md: '32%' },
             background: theme.palette.background.paper, 
-            p: { xs: 2, sm: 3 }, 
-            borderRadius: 4,
+            p: { xs: 2, sm: 2.5 }, 
+            borderRadius: 3,
             position: { xs: 'static', md: 'sticky' },
             top: { md: 100 },
-            height: 'fit-content'
+            height: 'fit-content',
+            maxHeight: { md: 'calc(100vh - 120px)' },
+            overflowY: 'auto',
+            boxShadow: isDark ? '0 4px 20px rgba(0,0,0,0.3)' : '0 4px 20px rgba(0,0,0,0.1)',
+            order: { xs: 1, md: 1 },
           }}>
-            <Typography variant="h6" fontWeight={700} sx={{ mb: 2, color: textColor }}>Agar bu sizga foydali bo'lgan bo'lsa — xursandman!</Typography>
-            <Typography variant="body2" sx={{ color: textColor, mb: 1 }}>
+            <Typography variant="h6" fontWeight={700} sx={{ mb: 1.5, color: textColor, fontSize: { xs: '1.1rem', md: '1.15rem' } }}>Agar bu sizga foydali bo'lgan bo'lsa — xursandman!</Typography>
+            <Typography variant="body2" sx={{ color: textColor, fontSize: { xs: '0.875rem', md: '0.9rem' }, lineHeight: 1.6 }}>
               Qo'shimcha savollar bo'lsa, bemalol murojaat qiling yoki ushbu ma'lumotni do'stlaringiz bilan bo'lishing.<br />
               Bog'lanish uchun: <a href="https://t.me/akbarkhojayev" target="_blank" rel="noopener noreferrer" style={{ color: theme.palette.primary.main, textDecoration: 'none' }}>@akbarkhojayev</a>
             </Typography>

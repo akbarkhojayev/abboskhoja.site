@@ -9,7 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import Loader from '../components/Loader';
 import Skeleton from '@mui/material/Skeleton';
 
-const API_BASE = 'http://127.0.0.1:8000/';
+const API_BASE = 'https://api.abboskhoja.site';
 
 function Home() {
   const navigate = useNavigate();
@@ -413,7 +413,7 @@ function Home() {
                   color: theme.palette.text.secondary, 
                   fontWeight: 600, 
                   fontSize: { sm: 29, md: 41, lg: 57 }, 
-                  mt: 1.25, 
+                  mt: -1, 
                   mb: 1.3,
                   textAlign: { xs: 'left', lg: 'left' },
                   display: { xs: 'none', sm: 'block' },
