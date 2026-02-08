@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Container, Typography, TextField, Button, Box, Alert, Paper, useTheme } from '@mui/material';
 import axios from 'axios';
 
-const API_BASE = 'https://api.abboskhoja.site';
+const API_BASE = 'https://api.abboskhoja.uz';
 
 // Soatni matematik misollar bilan ko‘rsatish uchun komponent
 function MathClock() {

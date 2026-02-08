@@ -4,7 +4,7 @@ import { Container, Typography, Box, Chip, Stack, Button } from '@mui/material';
 import parse from 'html-react-parser';
 import axios from 'axios';
 
-const API_BASE = 'https://api.abboskhoja.site';
+const API_BASE = 'https://api.abboskhoja.uz';
 
 function ProjectDetail() {
   const { id } = useParams();

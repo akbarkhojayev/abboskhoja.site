@@ -53,12 +53,6 @@ class Project(models.Model):
     def __str__(self):
         return self.title
 
-class ProjectCoverImage(models.Model):
-    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='cover_images')
-    image = models.ImageField(upload_to='projects/covers/', blank=True, null=True)
-
-    def __str__(self):
-        return str(self.image)
 
 class BlogPost(models.Model):
     title = models.CharField(max_length=200)
@@ -89,13 +83,6 @@ class BlogPost(models.Model):
 
     def __str__(self):
         return self.title
-
-class BlogCoverImage(models.Model):
-    image = models.ImageField(upload_to='blog/' ,blank=True, null=True)
-    blogpost = models.ForeignKey(BlogPost, on_delete=models.CASCADE, related_name='cover_images')
-
-    def __str__(self):
-        return str(self.image)
 
 class Experience(models.Model):
     job_title = models.CharField(max_length=150)
@@ -141,3 +128,61 @@ class PageViewLog(models.Model):
 
     def __str__(self):
         return f"View from {self.ip_address} on {self.project.title}"
+
+class LeetCodeSolution(models.Model):
+    DIFFICULTY_CHOICES = (
+        ('easy', 'Easy'),
+        ('medium', 'Medium'),
+        ('hard', 'Hard'),
+    )
+
+    LANGUAGE_CHOICES = (
+        ('python', 'Python'),
+        ('java', 'Java'),
+        ('cpp', 'C++'),
+    )
+
+    title = models.CharField(max_length=200)
+    problem_number = models.PositiveIntegerField()
+    difficulty = models.CharField(
+        max_length=10,
+        choices=DIFFICULTY_CHOICES
+    )
+
+    problem_statement = CKEditor5Field('Problem Statement')
+    approach = CKEditor5Field('Approach / Thought Process')
+    solution_code = CKEditor5Field('Solution Code')
+    explanation = CKEditor5Field('Code Explanation')
+
+    time_complexity = models.CharField(max_length=50)
+    space_complexity = models.CharField(max_length=50)
+
+    language = models.CharField(
+        max_length=10,
+        choices=LANGUAGE_CHOICES,
+        default='python'
+    )
+
+    leetcode_url = models.URLField()
+    tags = models.ManyToManyField('Tag', blank=True)
+
+    is_published = models.BooleanField(default=True)
+    views = models.PositiveIntegerField(default=0)
+
+    slug = models.SlugField(unique=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base_slug = slugify(f"{self.problem_number}-{self.title}")
+            slug = base_slug
+            i = 1
+            while LeetCodeSolution.objects.filter(slug=slug).exists():
+                slug = f"{base_slug}-{i}"
+                i += 1
+            self.slug = slug
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"#{self.problem_number} - {self.title}"

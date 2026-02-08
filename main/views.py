@@ -152,25 +152,6 @@ class TagListView(generics.ListCreateAPIView):
             return [IsAuthenticated()]
         return [AllowAny()]
 
-class BlogCoverImageRetrieveDeleteUpdateView(generics.RetrieveUpdateAPIView):
-    queryset = BlogCoverImage.objects.all()
-    serializer_class = BlogCoverImageSerializer
-
-    def get_permissions(self):
-        if self.request.method in ['PUT', 'PATCH', 'DELETE']:
-            return [IsAuthenticated()]
-        return [AllowAny()]
-
-class ProjectsCoverImageRetrieveDeleteUpdateView(generics.RetrieveUpdateAPIView):
-    queryset = ProjectCoverImage.objects.all()
-    serializer_class = ProjectsCoverImageSerializer
-
-    def get_permissions(self):
-        if self.request.method in ['PUT', 'PATCH', 'DELETE']:
-            return [IsAuthenticated()]
-        return [AllowAny()]
-
-
 class SoftSkillListAPIView(generics.ListCreateAPIView):
     serializer_class = SoftSkillSerializer
 
@@ -191,3 +172,25 @@ class SoftSkillRetrieveDeleteUpdateView(generics.RetrieveUpdateAPIView):
         return [AllowAny()]
 
 
+from rest_framework.generics import ListAPIView
+from .models import LeetCodeSolution
+from .serializers import LeetCodeSolutionListSerializer
+
+
+class LeetCodeSolutionListAPIView(ListAPIView):
+    serializer_class = LeetCodeSolutionListSerializer
+
+    def get_queryset(self):
+        return LeetCodeSolution.objects.filter(
+            is_published=True
+        ).prefetch_related('tags').order_by('-created_at')
+
+from rest_framework.generics import RetrieveAPIView
+from .models import LeetCodeSolution
+from .serializers import LeetCodeSolutionDetailSerializer
+
+
+class LeetCodeSolutionDetailAPIView(RetrieveAPIView):
+    queryset = LeetCodeSolution.objects.filter(is_published=True)
+    serializer_class = LeetCodeSolutionDetailSerializer
+    lookup_field = 'slug'

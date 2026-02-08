@@ -34,12 +34,6 @@ class UserProfileSerializer(serializers.ModelSerializer):
         active_softskills = obj.softskills.filter(is_active=True)
         return SoftSkillSerializer(active_softskills, many=True).data
 
-
-class ProjectsCoverImageSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ProjectCoverImage
-        fields = '__all__'
-
 class ProjectSerializer(serializers.ModelSerializer):
     tag = serializers.SlugRelatedField(
         many=True,
@@ -47,7 +41,6 @@ class ProjectSerializer(serializers.ModelSerializer):
         slug_field='name'
     )
     image = serializers.ImageField(required=False)
-    cover_images = ProjectsCoverImageSerializer(many=True, read_only=True)  # vaqtincha
 
     class Meta:
         model = Project
@@ -72,13 +65,6 @@ class ProjectSerializerCreate(serializers.ModelSerializer):
         project.tag.set(tags)
         return project
 
-
-class BlogCoverImageSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = BlogCoverImage
-        fields = '__all__'
-
-
 class BlogPostSerializer(serializers.ModelSerializer):
 
     tag = serializers.SlugRelatedField(
@@ -87,14 +73,12 @@ class BlogPostSerializer(serializers.ModelSerializer):
         slug_field='name'
     )
     image = serializers.ImageField(required=False)
-    cover_images = BlogCoverImageSerializer(many=True, read_only=True)
-
     class Meta:
         model = BlogPost
         fields = [
             'id', 'title', 'slug', 'content', 'image', 'tag',
             'created_at', 'updated_at',
-             'description', 'is_published', 'read_time', 'cover_images'
+             'description', 'is_published', 'read_time'
         ]
         read_only_fields = ['slug']
 
@@ -145,3 +129,46 @@ class TagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag
         fields = ['name']
+
+class LeetCodeSolutionListSerializer(serializers.ModelSerializer):
+    tags = TagSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = LeetCodeSolution
+        fields = [
+            'id',
+            'problem_number',
+            'title',
+            'difficulty',
+            'language',
+            'time_complexity',
+            'space_complexity',
+            'slug',
+            'created_at',
+            'tags',
+        ]
+
+class LeetCodeSolutionDetailSerializer(serializers.ModelSerializer):
+    tags = TagSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = LeetCodeSolution
+        fields = [
+            'id',
+            'problem_number',
+            'title',
+            'difficulty',
+            'language',
+            'problem_statement',
+            'approach',
+            'solution_code',
+            'explanation',
+            'time_complexity',
+            'space_complexity',
+            'leetcode_url',
+            'tags',
+            'slug',
+            'created_at',
+            'updated_at',
+        ]
+

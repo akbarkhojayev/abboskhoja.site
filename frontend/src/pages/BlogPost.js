@@ -12,7 +12,7 @@ import { motion } from 'framer-motion';
 import Loader from '../components/Loader';
 import Skeleton from '@mui/material/Skeleton';
 
-const API_BASE = 'https://api.abboskhoja.site';
+const API_BASE = 'https://api.abboskhoja.uz';
 
 function BlogPost() {
   const { slug } = useParams();

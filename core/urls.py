@@ -49,10 +49,6 @@ urlpatterns += [
     path('admin-blogs/<slug:slug>/', BlogPostRetrieveDestroyView.as_view(), name='blog-detail'),
     path('blog/<slug:slug>/', BlogPostDetailView.as_view(), name='blog'),
 
-    path('admin-blog-cover-image/<int:pk>/', BlogCoverImageRetrieveDeleteUpdateView.as_view(), name='blog-cover-detail'),
-
-    path('admin-project-cover-image/<int:pk>/', ProjectsCoverImageRetrieveDeleteUpdateView.as_view(), name='project-cover-detail'),
-
     path('experiences/', ExperienceListView.as_view(), name='experience-list'),
     path('admin-experience/<int:pk>/', ExperienceRetrieveDeleteUpdateView.as_view(), name='experience-detail'),
 
@@ -66,7 +62,11 @@ urlpatterns += [
 
     path('page-views/', PageViewLogListView.as_view(), name='pageview-log-list'),
 
-    path('tags/', TagListView.as_view(),)
+    path('tags/', TagListView.as_view()),
+
+    path('leetcode/', LeetCodeSolutionListAPIView.as_view(), name='leetcode-list'),
+    path('leetcode/<slug:slug>/', LeetCodeSolutionDetailAPIView.as_view(), name='leetcode-detail'),
+
 
 ]
 

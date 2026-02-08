@@ -10,7 +10,7 @@ import GitHubIcon from '@mui/icons-material/GitHub';
 import LaunchIcon from '@mui/icons-material/Launch';
 import Skeleton from '@mui/material/Skeleton';
 
-const API_BASE = 'https://api.abboskhoja.site';
+const API_BASE = 'https://api.abboskhoja.uz';
 
 function Projects() {
   const theme = useTheme();

@@ -9,7 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import Loader from '../components/Loader';
 import Skeleton from '@mui/material/Skeleton';
 
-const API_BASE = 'https://api.abboskhoja.site';
+const API_BASE = 'https://api.abboskhoja.uz';
 
 function Home() {
   const navigate = useNavigate();

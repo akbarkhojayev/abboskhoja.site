@@ -22,6 +22,7 @@ import ListItemText from '@mui/material/ListItemText';
 const pages = [
   { name: 'Projects', path: '/projects' },
   { name: 'Blog', path: '/blog' },
+  { name: 'Algorithms', path: '/algorithms' },
   { name: 'About', path: '/about' },
   { name: 'Contact', path: '/contact' },
 ];

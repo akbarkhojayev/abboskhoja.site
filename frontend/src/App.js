@@ -10,6 +10,8 @@ import Navbar from './components/Navbar';
 import BlogPost from './pages/BlogPost';
 import ThemeModeProvider from './ThemeContext';
 import ProjectDetail from './pages/ProjectDetail';
+import Algorithms from './pages/Algorithms';
+import AlgorithmDetail from './pages/AlgorithmDetail';
 
 function AppContent() {
   const theme = useTheme();
@@ -50,6 +52,8 @@ function AppContent() {
           <Route path="/projects" element={<Projects />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:slug" element={<BlogPost />} />
+          <Route path="/algorithms" element={<Algorithms />} />
+          <Route path="/algorithms/:slug" element={<AlgorithmDetail />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/admin-projects/:id/" element={<ProjectDetail />} />
@@ -68,7 +72,7 @@ function AppContent() {
 
         mt: 'auto',
       }}>
-        © 2025 abboskhoja.site
+        © 2026 abboskhoja.uz
       </Box>
     </Box>
   );

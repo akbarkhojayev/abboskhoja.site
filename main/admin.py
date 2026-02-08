@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django_ckeditor_5.widgets import CKEditor5Widget
 from django import forms
-from .models import UserProfile, Skill, Project, BlogPost, Experience, Education,SoftSkill , Message, PageViewLog,BlogCoverImage, Tag, ProjectCoverImage
+from .models import UserProfile, Skill, Project, BlogPost, Experience, Education,SoftSkill , Message, PageViewLog, Tag
 from django.utils.html import format_html
 
 class UserProfileAdminForm(forms.ModelForm):
@@ -99,15 +99,12 @@ class TagAdmin(admin.ModelAdmin):
     list_display = ('name',)
     search_fields = ('name',)
 
+from django.contrib import admin
+from .models import LeetCodeSolution
 
-@admin.register(BlogCoverImage)
-class BlogCoverImageAdmin(admin.ModelAdmin):
-    list_display = ('id', 'thumbnail')
-
-
-    def thumbnail(self, obj):
-        if obj.image:
-            return format_html('<img src="{}" width="100" title="{}" />', obj.image.url, obj.image.name)
-        return "-"
-
-    thumbnail.short_description = 'Preview'
+@admin.register(LeetCodeSolution)
+class LeetCodeSolutionAdmin(admin.ModelAdmin):
+    list_display = ('problem_number', 'title', 'difficulty', 'language', 'created_at')
+    list_filter = ('difficulty', 'language', 'created_at')
+    search_fields = ('title', 'problem_number')
+    prepopulated_fields = {"slug": ("title",)}
